@@ -1,10 +1,11 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from main.models import *
 from users.models import *
 
 
 # User management models
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
@@ -18,17 +19,27 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
             password=validated_data["password"],
         )
         return user
-    
 
 
-class FriendshipSerializer(serializers.HyperlinkedModelSerializer):
+class FriendshipSerializer(serializers.ModelSerializer):
+    user2 = serializers.UUIDField()
+
     class Meta:
         model = Friendship
         fields = ["user1", "user2", "status"]
-    
+        read_only_fields = ["user1"]
+
     def create(self, validated_data):
-      user = self.context['request'].user
-      return Friendship.objects.create(user1=user, **validated_data)
+        requester = self.context["request"].user
+        receiver_id = validated_data.get("user2")
+        receiver = get_object_or_404(User, pk=receiver_id)
+
+        if requester == receiver:
+            raise serializers.ValidationError(
+                "You cannot send friendship request to yourself"
+            )
+        return Friendship.objects.create(user1=requester, user2=receiver.id)
+
 
 ###
 

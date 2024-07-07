@@ -11,6 +11,6 @@ urlpatterns = [
     path("users/create/", UserCreate.as_view()),
     path("users/login/", login_view),
     path("users/logout/", logout_view),
-    path("friendships/", FriendshipList.as_view(), name="friendship-detail"),
+    path("friendships/", FriendshipList.as_view(), name="friendship-list"),
     path("friendships/<uuid:pk>/", FriendshipDetail.as_view(), name="friendship-detail"),
 ]

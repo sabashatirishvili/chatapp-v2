@@ -54,13 +54,19 @@ class Friendship(models.Model):
         ("pending", "Pending"),
         ("active", "Active"),
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user1 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="friendship_user1_set"
+        'users.User', on_delete=models.CASCADE, related_name="friendship_user1_set"
     )
     user2 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="friendship_user2_set"
+        'users.User', on_delete=models.CASCADE, related_name="friendship_user2_set"
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
 
     class Meta:
         unique_together = ("user1", "user2")
+
+    def delete(self, *args, **kwargs):
+        # Example: Delete related comments
+        self.comments.all().delete()
+        super().delete(*args, **kwargs)

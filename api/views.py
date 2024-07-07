@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
 from django.http import Http404
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators import authentication_classes
 from django.db.models import Q
 from rest_framework import generics
 from rest_framework import status
@@ -35,12 +35,13 @@ class UserDestroy(generics.RetrieveDestroyAPIView):
     serializer_class = UserSerializer
 
 
-@csrf_exempt
+@authentication_classes([])
 @api_view(["POST"])
 def login_view(request):
     username = request.data.get("username")
     password = request.data.get("password")
     user = authenticate(request, username=username, password=password)
+    print(user)
     print(f"Username: {username}")
     print(f"Password: {password}")
     if user is not None:
@@ -63,30 +64,28 @@ def logout_view(request):
 class FriendshipList(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [SessionAuthentication]
-    # permission_classes = IsAuthenticated
-    # def get_object(self, pk):
-    #     try:
-    #         return Friendship.objects.get(pk=pk)
-    #     except Friendship.DoesNotExist:
-    #         raise Http404
 
     def get(self, request, format=None):
         user = request.user
         friendships = Friendship.objects.filter(Q(user1=user) | Q(user2=user))
-        serializer = FriendshipSerializer(friendships)
+        serializer = FriendshipSerializer(
+            friendships, many=True, context={"request": request}
+        )
         return Response(serializer.data)
 
     def post(self, request, format=None):
         serializer = FriendshipSerializer(
-            data=request.data, context={"request": request}
+            data=request.data,
+            context={"request": request},
         )
+        print(request.data['user2'])
         if serializer.is_valid():
-            serializer.create()
-            Response(
+            serializer.save()
+            return Response(
                 {"message": "Friendship request sent."}, status=status.HTTP_201_CREATED
             )
         else:
-            Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FriendshipDetail(APIView):
