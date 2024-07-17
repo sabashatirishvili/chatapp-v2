@@ -1,14 +1,18 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
 from django.http import Http404
-from django.views.decorators import authentication_classes
 from django.db.models import Q
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
 from users.models import *
 from .serializers import *
@@ -28,6 +32,7 @@ class UserDetail(generics.RetrieveAPIView):
 class UserCreate(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [AllowAny]
 
 
 class UserDestroy(generics.RetrieveDestroyAPIView):
@@ -35,8 +40,8 @@ class UserDestroy(generics.RetrieveDestroyAPIView):
     serializer_class = UserSerializer
 
 
-@authentication_classes([])
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def login_view(request):
     username = request.data.get("username")
     password = request.data.get("password")
@@ -78,7 +83,7 @@ class FriendshipList(APIView):
             data=request.data,
             context={"request": request},
         )
-        print(request.data['user2'])
+        print(request.data["user2"])
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -89,6 +94,9 @@ class FriendshipList(APIView):
 
 
 class FriendshipDetail(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
+
     def get_object(self, request, pk, format=None):
         try:
             return Friendship.objects.get(pk=pk)
@@ -96,10 +104,30 @@ class FriendshipDetail(APIView):
             return Http404
 
     def get(self, request, pk, format=None):
-        pass
+        friendship = self.get_object(pk=pk)
+        if friendship:
+            return Response(friendship, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"error": "Friendship not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
     def put(self, request, pk, format=None):
-        pass
+        friendship = self.get_object(pk=pk)
+        serializer = FriendshipSerializer(friendship, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, *args, **kwargs):
-        pass
+    def delete(self, request, pk, format=None):
+        friendship = self.get_object(pk=pk)
+
+        if friendship:
+            friendship.delete()
+            return Response(
+                {"message": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT
+            )
+        return {"error": "Friendship not found"}, status=status.HTTP_404_NOT_FOUND
+
+
