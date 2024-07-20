@@ -22,7 +22,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class FriendshipSerializer(serializers.ModelSerializer):
-    user2 = serializers.UUIDField()
 
     class Meta:
         model = Friendship
@@ -32,13 +31,12 @@ class FriendshipSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         requester = self.context["request"].user
         receiver_id = validated_data.get("user2")
-        receiver = get_object_or_404(User, pk=receiver_id)
 
-        if requester == receiver:
+        if requester == receiver_id:
             raise serializers.ValidationError(
                 "You cannot send friendship request to yourself"
             )
-        return Friendship.objects.create(user1=requester, user2=receiver.id)
+        return Friendship.objects.create(user1=requester, user2=receiver_id)
 
 
 ###
@@ -48,6 +46,10 @@ class MessageSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Message
         fields = ["id", "content", "send_time", "sender"]
+
+    def create(self, validated_data):
+        sender = self.context["request"].user
+        return Friendship.objects.create(sender=sender, **validated_data)
 
 
 class ChatSerializer(serializers.HyperlinkedModelSerializer):
@@ -66,3 +68,4 @@ class ChatGroupSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ChatGroup
         fields = ["id", "name", "chats"]
+

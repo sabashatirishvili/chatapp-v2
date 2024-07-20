@@ -4,6 +4,7 @@ from django.http import Http404
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
+from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.decorators import (
@@ -128,6 +129,26 @@ class FriendshipDetail(APIView):
             return Response(
                 {"message": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT
             )
-        return {"error": "Friendship not found"}, status=status.HTTP_404_NOT_FOUND
+        return Response(
+            {"error": "Friendship not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+
+
+class ChatViewSet(viewsets.ModelViewSet):
+    queryset = Chat.objects.all()
+    serializer_class = MessageSerializer
+
+
+class ChannelViewSet(viewsets.ModelViewSet):
+    queryset = Channel.objects.all()
+    serializer_class = ChannelSerializer
+
+
+class ChatGroupViewSet(viewsets.ModelViewSet):
+    queryset = ChatGroup.objects.all()
+    serializer_class = ChatGroupSerializer
