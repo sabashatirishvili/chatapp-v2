@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group, Permission
 
 
 class CustomUserManager(UserManager):
-    def create_user(self, username, email=None, password=None, **extra_fields):
+    def create_user(self, username, email, password, **extra_fields):
         if not username:
             raise ValueError("Username field must be set")
         email = self.normalize_email(email)
@@ -31,8 +31,8 @@ class CustomUserManager(UserManager):
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(max_length=120, blank=False, null=False)
-    is_staff = models.BooleanField(default=False)  # Add this field
+    email = models.EmailField(max_length=120)
+    is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     creation_date = models.DateTimeField(
         default=timezone.now,
@@ -54,13 +54,19 @@ class Friendship(models.Model):
         ("pending", "Pending"),
         ("active", "Active"),
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user1 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="friendship_user1_set"
+        "users.User", on_delete=models.CASCADE, related_name="friendship_user1_set"
     )
     user2 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="friendship_user2_set"
+        "users.User", on_delete=models.CASCADE, related_name="friendship_user2_set"
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
 
     class Meta:
         unique_together = ("user1", "user2")
+
+    def delete(self, *args, **kwargs):
+        # Example: Delete related comments
+        self.comments.all().delete()
+        super().delete(*args, **kwargs)
