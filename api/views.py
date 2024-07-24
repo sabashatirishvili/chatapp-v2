@@ -1,17 +1,13 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
 from django.http import Http404
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
@@ -137,11 +133,33 @@ class FriendshipDetail(APIView):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False)
+    def list(self, serializer):
+        pass
 
 
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
-    serializer_class = MessageSerializer
+    serializer_class = ChatSerializer
+
+    @action(detail=False)
+    def list(self, request):
+        user = request.user
+        chats = Chat.objects.annotate(participants_count=Count("participants")).filter(
+            Q(participants=user) & Q(participants_count=2)
+        )
+        serializer = self.get_serializer(chats, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        user = request.user
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+          serializer.save()
+          return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_)
 
 
 class ChannelViewSet(viewsets.ModelViewSet):
