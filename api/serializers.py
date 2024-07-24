@@ -52,7 +52,7 @@ class MessageSerializer(serializers.HyperlinkedModelSerializer):
         return Friendship.objects.create(sender=sender, **validated_data)
 
 
-class ChatSerializer(serializers.HyperlinkedModelSerializer):
+class ChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
         fields = ["id", "name", "participants", "messages"]

@@ -44,6 +44,14 @@ INSTALLED_APPS = [
     "api.apps.ApiConfig",
 ]
 
+ASGI_APPLICATION = "chat.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "channels.layers.InMemoryChannelLayer",
+    },
+}
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
