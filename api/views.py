@@ -184,6 +184,27 @@ class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
     serializer_class = ChannelSerializer
 
+    @action(detail=False)
+    def list(self, request):
+        user = request.user
+        channels = Channel.objects.filter(members__in=[user])
+        serializer = self.get_serializer(channels, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        user = request.user
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True)
+    def destroy(self, request):
+      pass
+
 
 class ChatGroupViewSet(viewsets.ModelViewSet):
     queryset = ChatGroup.objects.all()
