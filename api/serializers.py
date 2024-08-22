@@ -55,7 +55,7 @@ class MessageSerializer(serializers.HyperlinkedModelSerializer):
 class ChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
-        fields = ["id", "name", "participants", "messages"]
+        fields = ["id", "name", "participants"]
 
 
 class ChannelSerializer(serializers.HyperlinkedModelSerializer):

@@ -25,12 +25,16 @@ SECRET_KEY = "django-insecure-0kgjru4)p(0gv3=anvgr%lp07p7pf!gnbtw1ffs75l3w*jc$ao
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost"]
 
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     "daphne",
     "channels",
     "rest_framework",
@@ -48,6 +52,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -75,17 +80,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "chat.wsgi.application"
 
-ASGI_APPLICATION = 'chat.asgi.application'
+ASGI_APPLICATION = "chat.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
-
 
 
 # Database
@@ -146,6 +147,8 @@ AUTHENTICATION_BACKENDS = (
 )
 
 AUTH_USER_MODEL = "users.User"
+
+
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
