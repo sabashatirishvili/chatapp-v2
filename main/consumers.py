@@ -1,35 +1,48 @@
 import json
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+import logging
+from django.shortcuts import get_object_or_404
+from channels.generic.websocket import WebsocketConsumer
+from channels.db import database_sync_to_async
+from .models import User, Chat, Message
 
 
-class ChatConsumer(AsyncJsonWebsocketConsumer):
-    async def connect(self):
-        await self.accept()
+class ChatConsumer(WebsocketConsumer):
+    def connect(self):
+        logging.debug("WebSocket connect method called.")
+        if self.scope["user"].is_authenticated:
+            self.chat_id = self.scope["url_route"]["kwargs"]["chat_id"]
+            self.group_name = f"chat_{self.chat_id}"
 
-        await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "connection_established",
-                    "message": "You have connected successfully!",
-                }
-            )
+            self.channel_layer.group_add(self.group_name, self.channel_name)
+
+            self.accept()
+        else:
+            self.close()
+
+    def disconnect(self, close_code):
+        self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message_content = text_data_json.get("message", "")
+        user = self.scope["user"]
+
+        if not message_content:
+            return
+
+        chat = get_object_or_404(Chat, id=self.chat_id)
+
+        # Create the message
+        message = Message.objects.create(
+            content=message_content, sender=user, chat=chat
         )
 
-    async def receive(self, text_data):
-        if not text_data:
-            print("Empty message received")
-            return  # or handle it as needed
-
-        try:
-            data = json.loads(text_data)
-        except json.JSONDecodeError:
-            print(f"Invalid JSON received: {text_data}")
-            return  # handle the error appropriately
-          
-        data = json.loads(text_data)
-        message = data.get("message", "No message")
-
-        # Echo the message back to the client
-        await self.send(
-            text_data=json.dumps({"type": "chat_message", "message": message})
+        self.channel_layer.group_send(
+            self.group_name, {"type": "chat_message", "message": message_content}
         )
+
+    def chat_message(self, event):
+        message = event["message"]
+
+        # Send message to WebSocket
+        self.send(text_data=json.dumps({"message": message}))
