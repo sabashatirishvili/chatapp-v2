@@ -31,7 +31,8 @@ class CustomUserManager(UserManager):
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(max_length=120)
+    email = models.EmailField(max_length=120, unique=True)
+    profile_picture = models.ImageField(upload_to="images/", blank=True, null=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     creation_date = models.DateTimeField(
@@ -47,6 +48,11 @@ class User(AbstractBaseUser):
 
     def has_module_perms(self, app_label):
         return self.is_staff
+
+    def save(self, *args, **kwargs):
+        if not self.profile_picture and not self.pk:
+            self.profile_picture = f"https://ui-avatars.com/api/?background=16A34A&color=fff&name={self.username}"
+        super().save(*args, **kwargs)
 
 
 class Friendship(models.Model):

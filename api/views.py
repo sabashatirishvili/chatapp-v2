@@ -6,7 +6,12 @@ from rest_framework import generics
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    action,
+    authentication_classes,
+)
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
@@ -39,11 +44,10 @@ class UserDestroy(generics.RetrieveDestroyAPIView):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_view(request):
-    username = request.data.get("username")
+    email = request.data.get("email")
     password = request.data.get("password")
-    user = authenticate(request, username=username, password=password)
+    user = authenticate(request, username=email, password=password)
     print(user)
-    print(f"Username: {username}")
     print(f"Password: {password}")
     if user is not None:
         login(request, user)
@@ -60,6 +64,15 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+
+
+@permission_classes([AllowAny])
+@api_view(["GET"])
+def check_auth(request):
+    if request.user.is_authenticated:
+        return Response({"authenticated": True, "username": request.user.username})
+    else:
+        return Response({"authenticated": False}, status=401)
 
 
 class FriendshipList(APIView):
@@ -203,7 +216,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
 
     @action(detail=True)
     def destroy(self, request):
-      pass
+        pass
 
 
 class ChatGroupViewSet(viewsets.ModelViewSet):
