@@ -11,6 +11,21 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+from google.oauth2 import service_account
+
+# .ENV
+load_dotenv(dotenv_path=".env.local")
+
+# .ENV Variables
+debug = os.getenv("DEBUG")
+secret_key = os.getenv("SECRET_KEY")
+google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+google_social_secret = os.getenv("GOOGLE_SOCIAL_SECRET")
+service_account_file_path = os.getenv("SERVICE_ACCOUNT_FILE_PATH")
+bucket_name = os.getenv("BUCKET_NAME")
+project_id = os.getenv("PROJECT_ID")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +35,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-0kgjru4)p(0gv3=anvgr%lp07p7pf!gnbtw1ffs75l3w*jc$ao"
+SECRET_KEY = secret_key
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = debug
 
 ALLOWED_HOSTS = ["localhost"]
 
@@ -34,6 +49,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Application definition
 
 INSTALLED_APPS = [
+    "storages",
     "corsheaders",
     "daphne",
     "channels",
@@ -47,6 +63,11 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "users.apps.UsersConfig",
     "api.apps.ApiConfig",
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
 ]
 
 MIDDLEWARE = [
@@ -58,6 +79,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "chat.urls"
@@ -149,14 +171,64 @@ AUTHENTICATION_BACKENDS = (
 AUTH_USER_MODEL = "users.User"
 
 
-
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.BasicAuthentication",  # enables simple command line authentication
+        "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ),
+}
+
+
+# django-allauth settings
+
+SITE_ID = 1
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": google_client_id,
+            "secret": google_social_secret,
+            "key": "",
+        }
+    }
+}
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+
+
+# Google Cloud Storage settings
+
+credentials = service_account.Credentials.from_service_account_file(
+    service_account_file_path,
+    scopes=["https://www.googleapis.com/auth/cloud-platform"],
+)
+
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+        "OPTIONS": {
+            "bucket_name": bucket_name,
+            "project_id": project_id,
+            "credentials": credentials,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+        "OPTIONS": {
+            "bucket_name": bucket_name,
+            "project_id": project_id,
+            "credentials": credentials,
+        },
+    },
 }

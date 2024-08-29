@@ -8,7 +8,6 @@ from .models import User, Chat, Message
 
 class ChatConsumer(WebsocketConsumer):
     def connect(self):
-        logging.debug("WebSocket connect method called.")
         if self.scope["user"].is_authenticated:
             self.chat_id = self.scope["url_route"]["kwargs"]["chat_id"]
             self.group_name = f"chat_{self.chat_id}"
@@ -40,6 +39,8 @@ class ChatConsumer(WebsocketConsumer):
         self.channel_layer.group_send(
             self.group_name, {"type": "chat_message", "message": message_content}
         )
+
+
 
     def chat_message(self, event):
         message = event["message"]
