@@ -3,6 +3,7 @@ import requests
 from io import BytesIO
 from django.core.files import File
 from rest_framework import serializers
+from celery import shared_task
 from main.models import *
 from users.models import *
 
@@ -15,20 +16,26 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "profile_picture", "password"]
-
-    def create(self, validated_data):
-        avatar_url = f"https://ui-avatars.com/api/?background=random&color=fff&name={validated_data["username"]}"
-        response = requests.get(avatar_url)
+    
+    @shared_task
+    def fetch_avatar_and_save(username, user_id):
+      avatar_url = f"https://ui-avatars.com/api/?background=random&color=fff&name={username}"
+      response = requests.get(avatar_url)
         
-        if response.status_code == 200:
+      if response.status_code == 200:
           image_file = BytesIO(response.content)
-          django_file = File(image_file, name=f"{validated_data['username']}.png")
+          django_file = File(image_file, name=f"{username}.png")
+          user = get_object_or_404(User, id=user_id)
+          user.profile_picture = django_file
+          user.save()
+    def create(self, validated_data):
+        
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
             password=validated_data["password"],
-            profile_picture = django_file
         )
+        self.fetch_avatar_and_save(validated_data["username"], user.id)
         return user
 
 
@@ -63,6 +70,7 @@ class MessageSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class ChatSerializer(serializers.ModelSerializer):
+    participants = UserSerializer(many=True, read_only=True)
     class Meta:
         model = Chat
         fields = ["id", "name", "participants"]
@@ -73,7 +81,7 @@ class ChatSerializer(serializers.ModelSerializer):
 class ChannelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Channel
-        fields = ["id", "name", "members", "chat_groups", "creation_date", "icon"]
+        fields = ["id", "name", "owner", "members", "chat_groups", "creation_date", "icon"]
         
     def create(self, validated_data):
         channel = Channel.objects.create(**validated_data)
@@ -86,7 +94,6 @@ class ChannelSerializer(serializers.HyperlinkedModelSerializer):
           filename = f"{channel.id}.png"
           django_file = File(image_file, name=filename)
           channel.icon.save(filename, django_file)
-          
 
 
 class ChatGroupSerializer(serializers.HyperlinkedModelSerializer):

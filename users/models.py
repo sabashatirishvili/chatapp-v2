@@ -49,12 +49,6 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return self.is_staff
 
-    def save(self, *args, **kwargs):
-        if not self.profile_picture and not self.pk:
-            self.profile_picture = f"https://ui-avatars.com/api/?background=16A34A&color=fff&name={self.username}"
-        super().save(*args, **kwargs)
-
-
 class Friendship(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),

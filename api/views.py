@@ -20,33 +20,33 @@ from .serializers import *
 
 
 # Create your views here.
-class UserList(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
 
-class UserDetail(generics.RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-
-class UserCreate(generics.CreateAPIView):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
-
-class UserDestroy(generics.RetrieveDestroyAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+    @action(detail=True)
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = serializer.create(validated_data=serializer.validated_data)
+                return Response(
+                    UserSerializer(user).data, status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_view(request):
-    email = request.data.get("email")
+    username = request.data.get("username")
     password = request.data.get("password")
-    user = authenticate(request, username=email, password=password)
+    user = authenticate(request, username=username, password=password)
     print(user)
     print(f"Password: {password}")
     if user is not None:
@@ -75,9 +75,16 @@ def check_auth(request):
         return Response({"authenticated": False}, status=401)
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_authenticated_user(request):
+    user = request.user
+    serializer = UserSerializer(user)
+    return Response(serializer.data)
+
+
 class FriendshipList(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [SessionAuthentication]
 
     def get(self, request, format=None):
         user = request.user
