@@ -44,16 +44,22 @@ ALLOWED_HOSTS = ["localhost"]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+
 CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
 INSTALLED_APPS = [
-    "storages",
     "corsheaders",
-    "daphne",
-    "channels",
+    "storages",
+    # "daphne",
+    # "channels",
     "rest_framework",
+    "rest_framework_simplejwt",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -102,7 +108,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "chat.wsgi.application"
 
-ASGI_APPLICATION = "chat.asgi.application"
+# ASGI_APPLICATION = "chat.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -176,9 +182,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.BasicAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
 
@@ -231,4 +235,15 @@ STORAGES = {
             "credentials": credentials,
         },
     },
+}
+
+
+# simple JWT
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
