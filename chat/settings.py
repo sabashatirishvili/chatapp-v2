@@ -56,8 +56,8 @@ CORS_ALLOW_CREDENTIALS = True
 INSTALLED_APPS = [
     "corsheaders",
     "storages",
-    # "daphne",
-    # "channels",
+    "daphne",
+    "channels",
     "rest_framework",
     "rest_framework_simplejwt",
     "django.contrib.admin",
@@ -108,7 +108,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "chat.wsgi.application"
 
-# ASGI_APPLICATION = "chat.asgi.application"
+ASGI_APPLICATION = "chat.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -242,7 +242,7 @@ STORAGES = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=4),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
